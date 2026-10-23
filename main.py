@@ -848,13 +848,15 @@ class EditLayer(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setStyleSheet(LAYER_STYLE)
 
+        # Подсказка создаётся до сборки панели: фильтры событий на кнопках
+        # начинают срабатывать уже во время сборки (например, при скрытии блоков).
+        self.tip = HoverTip(self)
+
         self.build_topbar()
         self.build_chip()
         self.build_panel()
         for control in self.findChildren(QPushButton) + self.findChildren(QCheckBox):
             control.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-
-        self.tip = HoverTip(self)
 
     # --- элементы интерфейса
 
@@ -1020,17 +1022,18 @@ class EditLayer(QWidget):
         button.installEventFilter(self)
 
     def eventFilter(self, obj, event):
+        tip = getattr(self, "tip", None)  # на всякий случай: до создания подсказки ничего не делаем
         text = self._tips.get(obj)
-        if text is not None:
+        if tip is not None and text is not None:
             kind = event.type()
             if kind == QEvent.Type.Enter:
-                self.tip.show_for(obj, text, self)
+                tip.show_for(obj, text, self)
             elif kind in (
                 QEvent.Type.Leave,
                 QEvent.Type.MouseButtonPress,
                 QEvent.Type.Hide,
             ):
-                self.tip.hide()
+                tip.hide()
         return super().eventFilter(obj, event)
 
     # --- действия
